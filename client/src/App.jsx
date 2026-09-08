@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react';
 
+const API_URL = 'http://localhost:5000/api';
+
 function App() {
   const [students, setStudents] = useState([]);
   const [form, setForm] = useState({ studentId: '', name: '', email: '' });
 
   const fetchStudents = async () => {
-    const res = await fetch('/api/students');
-    const data = await res.json();
-    setStudents(data);
+    try {
+      const res = await fetch(`${API_URL}/students`);
+      if (!res.ok) throw new Error('Không thể kết nối Backend');
+      const data = await res.json();
+      setStudents(data);
+    } catch (error) {
+      console.error('Lỗi tải danh sách:', error);
+    }
   };
 
   useEffect(() => {
@@ -16,13 +23,23 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await fetch('/api/students', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    });
-    setForm({ studentId: '', name: '', email: '' });
-    fetchStudents();
+    try {
+      const res = await fetch(`${API_URL}/students`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+
+      if (res.ok) {
+        setForm({ studentId: '', name: '', email: '' });
+        fetchStudents();
+      } else {
+        const errData = await res.json();
+        alert(`Lỗi: ${errData.message}`);
+      }
+    } catch (error) {
+      console.error('Lỗi thêm sinh viên:', error);
+    }
   };
 
   return (

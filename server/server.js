@@ -2,7 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const Student = require('../models/Student'); // Khai báo 1 lần duy nhất
+
+// Sửa đường dẫn import từ ../models/Student thành ./models/Student
+const Student = require('./models/Student');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -10,8 +12,15 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Da ket noi thanh cong voi MongoDB Atlas!'))
+// Bổ sung API /api/hello phục vụ cho Câu 45
+app.get('/api/hello', (req, res) => {
+  res.json({ message: 'Hello from MERN Backend!' });
+});
+
+// Kết nối MongoDB (sử dụng biến môi trường hoặc fallback mặc định)
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cloud-lab';
+mongoose.connect(mongoURI)
+  .then(() => console.log('Da ket noi thanh cong voi MongoDB!'))
   .catch((err) => console.error('Loi ket noi MongoDB:', err));
 
 // Câu 36: Lấy danh sách sinh viên

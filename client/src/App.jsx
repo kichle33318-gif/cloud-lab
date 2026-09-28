@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:5000/api/students';
 
 function App() {
   const [students, setStudents] = useState([]);
-  const [form, setForm] = useState({ studentId: '', name: '', email: '' });
+  const [formData, setFormData] = useState({ studentId: '', name: '', email: '' });
+  const [editingId, setEditingId] = useState(null);
 
+  // 1. Lấy danh sách sinh viên từ Backend
   const fetchStudents = async () => {
     try {
-      const res = await fetch(`${API_URL}/students`);
-      if (!res.ok) throw new Error('Không thể kết nối Backend');
+      const res = await fetch(API_URL);
       const data = await res.json();
-      setStudents(data);
+      setStudents(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Lỗi tải danh sách:', error);
+      console.error('Lỗi khi lấy danh sách sinh viên:', error);
+      setStudents([]);
     }
   };
 
@@ -21,56 +23,152 @@ function App() {
     fetchStudents();
   }, []);
 
+  // 2. Cập nhật dữ liệu Form khi người dùng nhập
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // 3. Xử lý Thêm mới hoặc Cập nhật sinh viên
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}/students`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
-      });
-
-      if (res.ok) {
-        setForm({ studentId: '', name: '', email: '' });
-        fetchStudents();
+      if (editingId) {
+        await fetch(`${API_URL}/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+        setEditingId(null);
       } else {
-        const errData = await res.json();
-        alert(`Lỗi: ${errData.message}`);
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
       }
+      setFormData({ studentId: '', name: '', email: '' });
+      fetchStudents();
     } catch (error) {
-      console.error('Lỗi thêm sinh viên:', error);
+      console.error('Lỗi khi lưu dữ liệu:', error);
+    }
+  };
+
+  // 4. Đưa thông tin sinh viên vào Form để sửa
+  const handleEdit = (student) => {
+    setEditingId(student._id);
+    setFormData({
+      studentId: student.studentId || '',
+      name: student.name || '',
+      email: student.email || '',
+    });
+  };
+
+  // 5. Hủy chế độ sửa
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setFormData({ studentId: '', name: '', email: '' });
+  };
+
+  // 6. Gọi API DELETE để xóa sinh viên
+  const handleDelete = async (id) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa sinh viên này không?')) {
+      try {
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        fetchStudents();
+      } catch (error) {
+        console.error('Lỗi khi xóa sinh viên:', error);
+      }
     }
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+    <div style={{ padding: '20px', maxWidth: '700px', margin: '0 auto' }}>
       <h2>Quản lý sinh viên</h2>
-      <form onSubmit={handleSubmit} style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+
+      {/* Form nhập dữ liệu */}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <input
+          type="text"
+          name="studentId"
           placeholder="MSSV"
-          value={form.studentId}
-          onChange={(e) => setForm({ ...form, studentId: e.target.value })}
+          value={formData.studentId}
+          onChange={handleChange}
           required
         />
         <input
+          type="text"
+          name="name"
           placeholder="Họ tên"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          value={formData.name}
+          onChange={handleChange}
           required
         />
         <input
+          type="email"
+          name="email"
           placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          value={formData.email}
+          onChange={handleChange}
           required
         />
-        <button type="submit">Thêm sinh viên</button>
+        <button type="submit" style={{ cursor: 'pointer' }}>
+          {editingId ? 'Cập nhật' : 'Thêm sinh viên'}
+        </button>
+        {editingId && (
+          <button type="button" onClick={handleCancelEdit} style={{ cursor: 'pointer' }}>
+            Hủy
+          </button>
+        )}
       </form>
 
+      {/* Danh sách sinh viên kèm nút Sửa và Xóa */}
       <h3>Danh sách sinh viên</h3>
-      <ul>
-        {students.map((s) => (
-          <li key={s._id}>{s.studentId} - {s.name} ({s.email})</li>
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        {students.map((st) => (
+          <li
+            key={st._id}
+            style={{
+              display: 'flex',
+              justify: 'space-between',
+              alignItems: 'center',
+              padding: '8px 0',
+              borderBottom: '1px solid #444',
+            }}
+          >
+            <span>
+              <strong>{st.studentId}</strong> - {st.name} ({st.email})
+            </span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => handleEdit(st)}
+                style={{
+                  cursor: 'pointer',
+                  backgroundColor: '#e0a800',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  fontWeight: 'bold'
+                }}
+              >
+                Sửa
+              </button>
+              <button
+                onClick={() => handleDelete(st._id)}
+                style={{
+                  cursor: 'pointer',
+                  backgroundColor: '#dc3545',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  fontWeight: 'bold'
+                }}
+              >
+                Xóa
+              </button>
+            </div>
+          </li>
         ))}
       </ul>
     </div>

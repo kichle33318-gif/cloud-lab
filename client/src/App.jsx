@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 
-const API_URL = 'http://localhost:5000/api/students';
+// Tự động dùng VITE_API_URL hoặc mặc định trỏ thẳng tới Backend Render chuẩn mới
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://mern-backend-235749.onrender.com';
+const API_URL = BASE_URL.endsWith('/api/students') ? BASE_URL : `${BASE_URL.replace(/\/$/, '')}/api/students`;
 
 function App() {
   const [students, setStudents] = useState([]);
@@ -129,7 +131,7 @@ function App() {
             key={st._id}
             style={{
               display: 'flex',
-              justify: 'space-between',
+              justifyContent: 'space-between',
               alignItems: 'center',
               padding: '8px 0',
               borderBottom: '1px solid #444',

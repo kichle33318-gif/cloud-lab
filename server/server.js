@@ -12,6 +12,11 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Route Health Check cho Render
+app.get('/', (req, res) => {
+  res.send(`Backend Running. DB Connection State: ${mongoose.connection.readyState}`);
+});
+
 // Bổ sung API /api/hello phục vụ cho Câu 45
 app.get('/api/hello', (req, res) => {
   res.json({ message: 'Hello from MERN Backend!' });
@@ -19,13 +24,29 @@ app.get('/api/hello', (req, res) => {
 
 // Kết nối MongoDB (sử dụng biến môi trường hoặc fallback mặc định)
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cloud-lab';
-mongoose.connect(mongoURI)
+
+mongoose.connect(mongoURI, { 
+  family: 4,                      // Ép dùng IPv4 tránh đứt mạng ngầm trên Render
+  serverSelectionTimeoutMS: 5000  // Giới hạn chờ kết nối 5 giây
+})
   .then(() => console.log('Da ket noi thanh cong voi MongoDB!'))
   .catch((err) => console.error('Loi ket noi MongoDB:', err));
+
+// Lắng nghe sự kiện đứt kết nối ngầm
+mongoose.connection.on('disconnected', () => console.log('>>> MongoDB bi ngat ket noi!'));
+mongoose.connection.on('error', (err) => console.error('>>> Loi Mongoose:', err));
 
 // Câu 36: Lấy danh sách sinh viên
 app.get('/api/students', async (req, res) => {
   try {
+    // Nếu DB chưa sẵn sàng (readyState !== 1), phản hồi ngay thay vì để Mongoose treo 10s
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ 
+        message: 'Database chua san sang hoặc dang ngat ket noi!', 
+        readyState: mongoose.connection.readyState 
+      });
+    }
+
     const students = await Student.find();
     res.json(students);
   } catch (err) {

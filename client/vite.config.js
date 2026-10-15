@@ -5,8 +5,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0',
-    proxy: {
-      '/api': 'http://localhost:5000'
-    }
+    port: 4173,
+    allowedHosts: ['.onrender.com', 'cloud-lab-frontend-235749.onrender.com']
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
+    allowedHosts: ['.onrender.com', 'cloud-lab-frontend-235749.onrender.com']
   }
 })

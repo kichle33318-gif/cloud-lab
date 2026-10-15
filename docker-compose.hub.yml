@@ -3,19 +3,17 @@ version: '3.8'
 services:
   backend:
     image: kichle33318/cloud-lab-backend:v1.0
-    container_name: mern-backend-part6
+    container_name: mern-backend-hub
     ports:
       - "5000:5000"
     environment:
       - PORT=5000
-      # Chuỗi kết nối MongoDB Atlas của bạn từ Phần 5
       - MONGO_URI=mongodb+srv://kichle:kichle33318@cluster0.sgi9onu.mongodb.net/cloudlab?retryWrites=true&w=majority
       - MONGODB_URI=mongodb+srv://kichle:kichle33318@cluster0.sgi9onu.mongodb.net/cloudlab?retryWrites=true&w=majority
 
   frontend:
-    image: kichle33318/cloud-lab-frontend:v1.0
-    build: ./client
-    container_name: mern-frontend-part6
+    image: kichle33318/cloud-lab-frontend:v2.0
+    container_name: mern-frontend-hub
     ports:
       - "3000:3000"
     depends_on:
